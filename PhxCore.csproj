@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>PhxCore</AssemblyName>
+    <RootNamespace>PhxCore</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <GenerateRuntimeConfigurationFiles>false</GenerateRuntimeConfigurationFiles>
+    <GameDir>C:\Program Files (x86)\Steam\steamapps\common\FRUKT</GameDir>
+    <!-- Use the game's MelonLoader folders when FRUKT is installed; otherwise fall back to the shared ModRefs folder. -->
+    <NetDir Condition="Exists('$(GameDir)\MelonLoader\net6\MelonLoader.dll')">$(GameDir)\MelonLoader\net6</NetDir>
+    <NetDir Condition="'$(NetDir)' == ''">$(MSBuildThisFileDirectory)..\..\ModRefs</NetDir>
+    <GameRefs Condition="Exists('$(GameDir)\MelonLoader\Il2CppAssemblies\Il2CppFRUKT.dll')">$(GameDir)\MelonLoader\Il2CppAssemblies</GameRefs>
+    <GameRefs Condition="'$(GameRefs)' == ''">$(MSBuildThisFileDirectory)..\..\ModRefs</GameRefs>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="MelonLoader"><HintPath>$(NetDir)\MelonLoader.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="0Harmony"><HintPath>$(NetDir)\0Harmony.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Il2CppInterop.Runtime"><HintPath>$(NetDir)\Il2CppInterop.Runtime.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Il2CppInterop.Common"><HintPath>$(NetDir)\Il2CppInterop.Common.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Il2CppFRUKT"><HintPath>$(GameRefs)\Il2CppFRUKT.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Il2CppTripledoseLibs"><HintPath>$(GameRefs)\Il2CppTripledoseLibs.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Il2CppCORE"><HintPath>$(GameRefs)\Il2CppCORE.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Il2Cppmscorlib"><HintPath>$(GameRefs)\Il2Cppmscorlib.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Il2CppSystem"><HintPath>$(GameRefs)\Il2CppSystem.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.CoreModule"><HintPath>$(GameRefs)\UnityEngine.CoreModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.UIModule"><HintPath>$(GameRefs)\UnityEngine.UIModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.TextRenderingModule"><HintPath>$(GameRefs)\UnityEngine.TextRenderingModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.PhysicsModule"><HintPath>$(GameRefs)\UnityEngine.PhysicsModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.IMGUIModule"><HintPath>$(GameRefs)\UnityEngine.IMGUIModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.UI"><HintPath>$(GameRefs)\UnityEngine.UI.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Unity.TextMeshPro"><HintPath>$(GameRefs)\Unity.TextMeshPro.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Unity.InputSystem"><HintPath>$(GameRefs)\Unity.InputSystem.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+
+  <!-- After a build, drop PhxCore.dll into the game's Mods folder when FRUKT is installed and not running. -->
+  <Target Name="CopyToMods" AfterTargets="Build" Condition="Exists('$(GameDir)\Mods')">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(GameDir)\Mods" ContinueOnError="true" />
+  </Target>
+</Project>

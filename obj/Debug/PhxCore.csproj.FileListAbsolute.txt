@@ -1,0 +1,14 @@
+C:\Users\gamer\OneDrive\Desktop\Github\FruktMods\FruktFableMods\PhxCore\bin\Debug\PhxCore.deps.json
+C:\Users\gamer\OneDrive\Desktop\Github\FruktMods\FruktFableMods\PhxCore\bin\Debug\PhxCore.dll
+C:\Users\gamer\OneDrive\Desktop\Github\FruktMods\FruktFableMods\PhxCore\bin\Debug\PhxCore.pdb
+C:\Users\gamer\OneDrive\Desktop\Github\FruktMods\FruktFableMods\PhxCore\bin\Debug\PhxCore.xml
+C:\Users\gamer\OneDrive\Desktop\Github\FruktMods\FruktFableMods\PhxCore\obj\Debug\PhxCore.csproj.AssemblyReference.cache
+C:\Users\gamer\OneDrive\Desktop\Github\FruktMods\FruktFableMods\PhxCore\obj\Debug\PhxCore.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\gamer\OneDrive\Desktop\Github\FruktMods\FruktFableMods\PhxCore\obj\Debug\PhxCore.AssemblyInfoInputs.cache
+C:\Users\gamer\OneDrive\Desktop\Github\FruktMods\FruktFableMods\PhxCore\obj\Debug\PhxCore.AssemblyInfo.cs
+C:\Users\gamer\OneDrive\Desktop\Github\FruktMods\FruktFableMods\PhxCore\obj\Debug\PhxCore.csproj.CoreCompileInputs.cache
+C:\Users\gamer\OneDrive\Desktop\Github\FruktMods\FruktFableMods\PhxCore\obj\Debug\PhxCore.dll
+C:\Users\gamer\OneDrive\Desktop\Github\FruktMods\FruktFableMods\PhxCore\obj\Debug\refint\PhxCore.dll
+C:\Users\gamer\OneDrive\Desktop\Github\FruktMods\FruktFableMods\PhxCore\obj\Debug\PhxCore.xml
+C:\Users\gamer\OneDrive\Desktop\Github\FruktMods\FruktFableMods\PhxCore\obj\Debug\PhxCore.pdb
+C:\Users\gamer\OneDrive\Desktop\Github\FruktMods\FruktFableMods\PhxCore\obj\Debug\ref\PhxCore.dll

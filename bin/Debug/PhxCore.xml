@@ -1,0 +1,194 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>PhxCore</name>
+    </assembly>
+    <members>
+        <member name="T:PhxCore.Mods">
+            <summary>
+            Entry point for every Phoenix557 mod. Call <see cref="M:PhxCore.Mods.Register(System.String)"/> once from the mod's OnInitializeMelon,
+            then add the options its page in the PHX MODS menu should show.
+            <code>
+            var mod = PhxCore.Mods.Register("X-Ray");
+            PhxCore.Hotkey key = mod.Key("Toggle", Key.X);
+            PhxCore.Switch glow = mod.Toggle("Glow", true);
+            PhxCore.Choice color = mod.Choice("Color", new[] { "RED", "GREEN", "BLUE" }, 0);
+            </code>
+            </summary>
+        </member>
+        <member name="P:PhxCore.Mods.Ready">
+            <summary>True once PhxCore has started. Mods can check this before relying on the menu.</summary>
+        </member>
+        <member name="P:PhxCore.Mods.Version">
+            <summary>The PhxCore version, for mods that need a minimum.</summary>
+        </member>
+        <member name="T:PhxCore.ModEntry">
+            <summary>One mod listed in PHX MODS, with the options on its page.</summary>
+        </member>
+        <member name="M:PhxCore.ModEntry.Key(System.String,UnityEngine.InputSystem.Key)">
+            <summary>A rebindable key. Poll it with <see cref="M:PhxCore.Hotkey.Pressed"/> each frame.</summary>
+        </member>
+        <member name="M:PhxCore.ModEntry.Toggle(System.String,System.Boolean)">
+            <summary>An ON/OFF option.</summary>
+        </member>
+        <member name="M:PhxCore.ModEntry.Choice(System.String,System.String[],System.Int32)">
+            <summary>An option that steps through a fixed list each time it is clicked. The chosen value is saved.</summary>
+        </member>
+        <member name="M:PhxCore.ModEntry.Linked(System.String,System.String[],System.Func{System.Int32},System.Action{System.Int32})">
+            <summary>A choice whose value lives outside PhxCore (read fresh each time, never saved to PhxCore.cfg).</summary>
+        </member>
+        <member name="E:PhxCore.Hotkey.Changed">
+            <summary>Raised after the player rebinds this key in the menu.</summary>
+        </member>
+        <member name="M:PhxCore.Hotkey.Pressed">
+            <summary>True on the frame the key goes down, unless the PHX menu is open or the player is frozen.</summary>
+        </member>
+        <member name="E:PhxCore.Switch.Changed">
+            <summary>Raised after the player flips this option in the menu.</summary>
+        </member>
+        <member name="E:PhxCore.Choice.Changed">
+            <summary>Raised with the new index after the player changes this option in the menu.</summary>
+        </member>
+        <member name="T:PhxCore.Player">
+            <summary>
+            Shared player state. Mods that move the player must stand still while Frozen is true.
+            Each caller passes its own holder, so one mod releasing does not undo another's hold.
+            </summary>
+        </member>
+        <member name="P:PhxCore.Player.Invulnerable">
+            <summary>While any mod holds this, nothing should hurt the player.</summary>
+        </member>
+        <member name="P:PhxCore.Player.Walking">
+            <summary>True while PhxCore's built-in walking is active (noclip is off).</summary>
+        </member>
+        <member name="M:PhxCore.Player.SetWalking(System.Boolean)">
+            <summary>Switch to walking (true) or noclip (false) from another mod.</summary>
+        </member>
+        <member name="M:PhxCore.Player.OnRespawn(System.Action)">
+            <summary>Called when the pause menu's RESPAWN button is pressed.</summary>
+        </member>
+        <member name="F:PhxCore.Registry.Core">
+            <summary>PhxCore's own page (SETTINGS). Kept out of the mod list but saved with everything else.</summary>
+        </member>
+        <member name="M:PhxCore.Registry.Discover">
+            <summary>
+            Lists Phoenix557 mods that are installed but never called Register, so every one of them shows up in PHX MODS.
+            </summary>
+        </member>
+        <member name="T:PhxCore.Config">
+            <summary>
+            Plain key=value settings in UserData/PhxCore.cfg. On first run it picks up values from the old Phx Pause file (Phx.cfg).
+            Values for mods that are not installed right now are kept, so removing a mod does not lose its settings.
+            </summary>
+        </member>
+        <member name="T:PhxCore.Display">
+            <summary>
+            Window mode row on the PhxCore SETTINGS page. Unity remembers the chosen mode between launches on its own.
+            </summary>
+        </member>
+        <member name="T:PhxCore.Ground">
+            <summary>
+            Gives the map solid hitboxes for walking. Surfaces the game already made solid are left alone. Every other map
+            surface gets a collider that matches it as closely as the game allows:
+             - readable mesh: a MeshCollider with its exact shape (ramps, stairs, uneven ground),
+             - otherwise, thin or compact pieces: a BoxCollider fitted to the mesh and rotated with it,
+             - otherwise (big pieces of unknown shape, e.g. a whole room in one mesh): skipped, because a solid box would trap you.
+            A wide safety slab under the whole map catches anything that still falls through.
+            </summary>
+        </member>
+        <member name="M:PhxCore.Ground.TryAddFittedBox(UnityEngine.GameObject,UnityEngine.Mesh)">
+            <summary>A box in the mesh's own space, so it turns and scales with the object instead of being a world-aligned block.</summary>
+        </member>
+        <member name="T:PhxCore.Hitboxes">
+            <summary>
+            Debug view (SETTINGS › SHOW HITBOXES). Outlines every solid collider near the camera:
+            green = the game's own, orange = added by PhxCore, blue = PhxCore mesh hitbox (outline shows its bounds).
+            </summary>
+        </member>
+        <member name="M:PhxCore.Hitboxes.ViewCamera">
+            <summary>The camera the player is looking through. FRUKT's camera is not always tagged MainCamera.</summary>
+        </member>
+        <member name="M:PhxCore.Hitboxes.VisibleLayer(UnityEngine.Camera)">
+            <summary>A layer the camera draws, so the outlines are not culled away.</summary>
+        </member>
+        <member name="M:PhxCore.Hitboxes.EnsureMaterials">
+            <summary>
+            An unlit, vertex-coloured material that draws on top of everything, so outlines show through walls and floors.
+            Hidden/Internal-Colored ships in every Unity build (it is what GL and debug drawing use).
+            </summary>
+        </member>
+        <member name="T:PhxCore.Menu.OptionRow">
+            <summary>One line on a mod's page: a full-size pause-menu line reading "LABEL   VALUE".</summary>
+        </member>
+        <member name="M:PhxCore.Menu.Style(Il2CppViews.Generic.MenuLineButton)">
+            <summary>One line of text that shrinks a little if it must, rather than wrapping or running off the plate.</summary>
+        </member>
+        <member name="M:PhxCore.Menu.Write(PhxCore.Menu.OptionRow,System.String)">
+            <summary>
+            "LABEL   :   VALUE" on one full-size line. Plain text on purpose: the line's console effect glitches letters at
+            random, and it would glitch the inside of rich-text tags too.
+            </summary>
+        </member>
+        <member name="M:PhxCore.Menu.RemoveOld(UnityEngine.Transform,System.String)">
+            <summary>
+            Takes away a copy made earlier under the same name: one left by a Phx that was loaded before this one (hot reload), or by a
+            scene this pause menu outlived. Its buttons still call into the old copy, so it is replaced rather than reused.
+            </summary>
+        </member>
+        <member name="M:PhxCore.Menu.Teardown">
+            <summary>Takes this copy's button and pages out of the pause menu, so a reloaded Phx starts clean.</summary>
+        </member>
+        <member name="T:PhxCore.Movement">
+            <summary>
+            PhxCore's built-in movement: noclip on a hotkey (N by default) and the "Default movement" setting that picks
+            whether the player spawns walking or flying. Both rows live on the SETTINGS page in PHX MODS.
+            Stands down if the old Walking.dll is still installed, so the two never fight over the player.
+            </summary>
+        </member>
+        <member name="T:PhxCore.UpdateModal">
+             <summary>
+             "UPDATES AVAILABLE" window shown at startup when any Phoenix557 mod is out of date. One line per mod with its
+             name, installed and latest version, and a DOWNLOAD button that opens that release on GitHub. X or Esc closes it.
+            
+             It takes its font and colours from the game's own pause-menu lines so it reads as part of FRUKT's menus.
+             Clicks are hit-tested here rather than through the EventSystem, so it works on any screen the game is on.
+             </summary>
+        </member>
+        <member name="M:PhxCore.UpdateModal.Place(UnityEngine.RectTransform,System.Single,System.Single,System.Single,System.Single)">
+            <summary>Top-left based placement inside the parent, in reference pixels.</summary>
+        </member>
+        <member name="T:PhxCore.Updates">
+            <summary>
+            Checks every installed Phoenix557 mod against the latest GitHub release of its repo when the game starts.
+            Outdated mods are logged and listed in <see cref="T:PhxCore.UpdateModal"/>, which opens once all checks are back.
+            </summary>
+        </member>
+        <member name="M:PhxCore.Updates.IsOurRelease(System.String)">
+            <summary>Only ever open links to this author's GitHub releases.</summary>
+        </member>
+        <member name="M:PhxCore.Updates.Tick">
+            <summary>Main thread: once every check is back, hands the outdated list to the modal (once per launch).</summary>
+        </member>
+        <member name="T:PhxCore.Walker">
+            <summary>
+            Walking physics, ported from the Walking mod. The player gets a capsule, gravity, sprint and jump while the game's
+            noclip flight is off. Movement (below) decides when noclip is on.
+            </summary>
+        </member>
+        <member name="M:PhxCore.Walker.Request(System.Boolean)">
+            <summary>Asks for walking or noclip. Applied on the next frame the player exists.</summary>
+        </member>
+        <member name="M:PhxCore.Walker.Respawn">
+            <summary>Puts the player back where they first appeared in this scene, in the default movement mode.</summary>
+        </member>
+        <member name="M:PhxCore.Walker.SnapToGround(UnityEngine.Vector3)">
+            <summary>
+            Keeps the feet on the ground: pulls down onto surfaces just below (walking down slopes) and lifts up onto
+            walkable surfaces the feet have sunk into (walking up slopes, stairs and small ledges up to StepHeight).
+            </summary>
+        </member>
+        <member name="M:PhxCore.Walker.LiftOntoFloor">
+            <summary>When walking starts, puts the feet on top of whatever surface they are inside or just above.</summary>
+        </member>
+    </members>
+</doc>
