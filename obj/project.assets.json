@@ -13,11 +13,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\gamer\\OneDrive\\Desktop\\Github\\FruktMods\\FruktFableMods\\PhxCore\\PhxCore.csproj",
+      "projectUniqueName": "C:\\Users\\gamer\\OneDrive\\Desktop\\Github\\Frukt-Mods\\Frukt-PhxCore\\PhxCore.csproj",
       "projectName": "PhxCore",
-      "projectPath": "C:\\Users\\gamer\\OneDrive\\Desktop\\Github\\FruktMods\\FruktFableMods\\PhxCore\\PhxCore.csproj",
+      "projectPath": "C:\\Users\\gamer\\OneDrive\\Desktop\\Github\\Frukt-Mods\\Frukt-PhxCore\\PhxCore.csproj",
       "packagesPath": "C:\\Users\\gamer\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\gamer\\OneDrive\\Desktop\\Github\\FruktMods\\FruktFableMods\\PhxCore\\obj\\",
+      "outputPath": "C:\\Users\\gamer\\OneDrive\\Desktop\\Github\\Frukt-Mods\\Frukt-PhxCore\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\gamer\\AppData\\Roaming\\NuGet\\NuGet.Config"

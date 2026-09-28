@@ -59,6 +59,11 @@ namespace PhxCore
                 _walker.Request(walking);
         }
 
+        internal static bool Teleport(UnityEngine.Vector3 feet, UnityEngine.Quaternion? facing)
+        {
+            return _walker != null && _walker.TeleportFeet(feet, facing);
+        }
+
         internal static void Shutdown()
         {
             Hitboxes.Hide();

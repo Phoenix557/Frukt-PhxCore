@@ -465,6 +465,36 @@ namespace PhxCore
             _pending = Movement.WalkByDefault ? 1 : 0;
         }
 
+        /// <summary>
+        /// Moves a walking player so their feet land on <paramref name="feet"/>. Returns false when the player is flying
+        /// (noclip) or not ready, so the caller can use the game's own teleport instead.
+        /// </summary>
+        internal bool TeleportFeet(Vector3 feet, Quaternion? facing)
+        {
+            if (_player == null || _body == null || _capsule == null || IsNoclip())
+                return false;
+
+            _planar = Vector3.zero;
+            _vertical = 0f;
+            _jumpBufferUntil = 0f;
+            _simPosition = feet - _capsule.center + Vector3.up * (_capsule.height * 0.5f + 0.02f);
+            _hasVisual = true;
+            ApplyPose();
+            FollowWithCamera();
+            FollowHeld();
+            if (facing.HasValue && _player.CameraService != null && _player.CameraService.CameraTransform != null)
+            {
+                Vector3 look = facing.Value * Vector3.forward;
+                look.y = 0f;
+                if (look.sqrMagnitude > 0.0001f)
+                {
+                    Transform view = _player.CameraService.CameraTransform;
+                    view.rotation = Quaternion.LookRotation(look.normalized, Vector3.up);
+                }
+            }
+            return true;
+        }
+
         void PollJump()
         {
             Keyboard keyboard = Keyboard.current;

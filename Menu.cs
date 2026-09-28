@@ -40,8 +40,6 @@ namespace PhxCore
         static MenuLineButton _button;
         static MenuLineButton _respawn;
         static UnityAction _buttonClick;
-        static UnityAction _respawnClick;
-        static bool _respawnFailed;
         static PausePresenter _pause;
         static ModEntry _open;
         static Hotkey _listening;
@@ -69,8 +67,6 @@ namespace PhxCore
             _button = null;
             _respawn = null;
             _buttonClick = null;
-            _respawnClick = null;
-            _respawnFailed = false;
             _pause = null;
             _open = null;
             _listening = null;
@@ -157,7 +153,7 @@ namespace PhxCore
 
         static void EnsureButton()
         {
-            if ((_button != null || _failed) && (_respawn != null || _respawnFailed))
+            if (_button != null || _failed)
                 return;
 
             PauseView view = UnityEngine.Object.FindFirstObjectByType<PauseView>();
@@ -167,8 +163,6 @@ namespace PhxCore
             MenuLineButton proto = view.m_settingsButton;
             if (_button == null && !_failed)
                 _button = AddLine(proto, Prefix + "Button", Title, (UnityAction)(Action)ShowList, ref _buttonClick, ref _failed, "pause");
-            if (_respawn == null && !_respawnFailed)
-                _respawn = AddLine(proto, Prefix + "Respawn", "RESPAWN", (UnityAction)(Action)Player.Respawn, ref _respawnClick, ref _respawnFailed, "respawn");
         }
 
         static MenuLineButton AddLine(MenuLineButton proto, string name, string word, UnityAction click, ref UnityAction stored, ref bool failed, string what)
@@ -316,6 +310,25 @@ namespace PhxCore
                 UnityAction openSettings = (UnityAction)(Action)(() => OpenMod(Registry.Core));
                 _clicks.Add(openSettings);
                 settings.m_button.onClick.AddListener(openSettings);
+            }
+
+            // RESPAWN lives here rather than on the pause menu itself, which has no room once other mods add their buttons.
+            if (Player.CanRespawn)
+            {
+                MenuLineButton respawn = Clone(proto, column, Prefix + "Mod_Respawn");
+                if (respawn != null && respawn.m_button != null)
+                {
+                    respawn.gameObject.SetActive(true);
+                    respawn.SetWord("RESPAWN");
+                    UnityAction doRespawn = (UnityAction)(Action)(() =>
+                    {
+                        Player.Respawn();
+                        if (_page == Page.List && Ride(_list, _root, true))
+                            _page = Page.None;
+                    });
+                    _clicks.Add(doRespawn);
+                    respawn.m_button.onClick.AddListener(doRespawn);
+                }
             }
 
             if (Registry.All.Count == 0)

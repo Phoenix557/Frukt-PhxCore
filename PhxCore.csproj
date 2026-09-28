@@ -14,9 +14,11 @@
     <GameDir>C:\Program Files (x86)\Steam\steamapps\common\FRUKT</GameDir>
     <!-- Use the game's MelonLoader folders when FRUKT is installed; otherwise fall back to the shared ModRefs folder. -->
     <NetDir Condition="Exists('$(GameDir)\MelonLoader\net6\MelonLoader.dll')">$(GameDir)\MelonLoader\net6</NetDir>
-    <NetDir Condition="'$(NetDir)' == ''">$(MSBuildThisFileDirectory)..\..\ModRefs</NetDir>
+    <ModRefs Condition="Exists('$(MSBuildThisFileDirectory)..\ModRefs')">$(MSBuildThisFileDirectory)..\ModRefs</ModRefs>
+    <ModRefs Condition="'$(ModRefs)' == ''">$(MSBuildThisFileDirectory)..\..\FruktMods\ModRefs</ModRefs>
+    <NetDir Condition="'$(NetDir)' == ''">$(ModRefs)</NetDir>
     <GameRefs Condition="Exists('$(GameDir)\MelonLoader\Il2CppAssemblies\Il2CppFRUKT.dll')">$(GameDir)\MelonLoader\Il2CppAssemblies</GameRefs>
-    <GameRefs Condition="'$(GameRefs)' == ''">$(MSBuildThisFileDirectory)..\..\ModRefs</GameRefs>
+    <GameRefs Condition="'$(GameRefs)' == ''">$(ModRefs)</GameRefs>
   </PropertyGroup>
 
   <ItemGroup>

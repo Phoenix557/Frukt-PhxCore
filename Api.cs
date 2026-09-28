@@ -278,6 +278,16 @@ namespace PhxCore
             Movement.Request(walking);
         }
 
+        /// <summary>
+        /// Moves a walking player so their feet land at <paramref name="feet"/>, keeping PhxCore's walking in step (a game
+        /// teleport alone is undone by walking on the next frame). Returns false while the player is in noclip or not
+        /// spawned yet; use the game's own teleport then.
+        /// </summary>
+        public static bool Teleport(UnityEngine.Vector3 feet)
+        {
+            return Movement.Teleport(feet, null);
+        }
+
         /// <summary>Called when the pause menu's RESPAWN button is pressed.</summary>
         public static void OnRespawn(Action handler)
         {
@@ -290,6 +300,8 @@ namespace PhxCore
             if (handler != null)
                 _respawn -= handler;
         }
+
+        internal static bool CanRespawn => _respawn != null;
 
         internal static void Respawn()
         {

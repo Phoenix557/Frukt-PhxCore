@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "eibfJ7hhpw8=",
+  "dgSpecHash": "pSxl7QXAGjE=",
   "success": true,
-  "projectFilePath": "C:\\Users\\gamer\\OneDrive\\Desktop\\Github\\FruktMods\\FruktFableMods\\PhxCore\\PhxCore.csproj",
+  "projectFilePath": "C:\\Users\\gamer\\OneDrive\\Desktop\\Github\\Frukt-Mods\\Frukt-PhxCore\\PhxCore.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\gamer\\.nuget\\packages\\microsoft.netcore.app.ref\\6.0.36\\microsoft.netcore.app.ref.6.0.36.nupkg.sha512",
     "C:\\Users\\gamer\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\6.0.36\\microsoft.windowsdesktop.app.ref.6.0.36.nupkg.sha512",
