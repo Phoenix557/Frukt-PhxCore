@@ -13,6 +13,7 @@ namespace PhxCore
         public override void OnInitializeMelon()
         {
             Config.EnsureLoaded();
+            Registry.UnloadDisabled(false);
             Movement.Init();
             Display.Register();
             HarmonyInstance.PatchAll(typeof(PhxBackPatch));
@@ -22,6 +23,7 @@ namespace PhxCore
 
         public override void OnLateInitializeMelon()
         {
+            Registry.UnloadDisabled(true);
             if (Registry.FindMelon("Phx Pause") != null)
                 LoggerInstance.Warning("Phx.dll (Phx Pause) is also installed. PhxCore replaces it; remove Phx.dll from Mods to avoid two menu buttons.");
             if (Registry.FindMelon("PhxLib") != null)

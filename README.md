@@ -14,6 +14,7 @@ PhxCore replaces **Phx Pause** (`Phx.dll`), **Walking** (`Walking.dll`), and **P
 - **Ground hitboxes** adds floors so walking has something to stand on. Default: `GAME + PHXCORE` (or `GAME ONLY`). PHX MODS > SETTINGS > GROUND HITBOXES
 - **Show hitboxes** outlines solid colliders near you. Default: off. PHX MODS > SETTINGS > SHOW HITBOXES
 - **Display mode** is fullscreen, borderless, or windowed. PHX MODS > SETTINGS > DISPLAY MODE
+- **On / off** is the plate on the left of each mod name. **OFF** unloads that mod. **ON** loads it again. PhxCore cannot be turned off
 - **Respawn** button inside PHX MODS
 - Update check for every Phoenix557 mod you have installed
 

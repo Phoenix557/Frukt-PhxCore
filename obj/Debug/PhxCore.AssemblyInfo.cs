@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("PhxCore")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+17ad3058ff478db773e74d5e9cd00740de55cfab")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c4957b7046133ccf93c8e7ab14a7dadbaccaf504")]
 [assembly: System.Reflection.AssemblyProductAttribute("PhxCore")]
 [assembly: System.Reflection.AssemblyTitleAttribute("PhxCore")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

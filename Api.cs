@@ -43,6 +43,8 @@ namespace PhxCore
         public string Version { get; internal set; }
 
         internal Assembly Assembly;
+        internal MelonBase Melon;
+
         internal readonly List<Hotkey> Keys = new List<Hotkey>();
         internal readonly List<Switch> Flags = new List<Switch>();
         internal readonly List<Choice> Choices = new List<Choice>();
@@ -60,6 +62,8 @@ namespace PhxCore
                 return;
             Assembly = assembly;
             MelonBase melon = Registry.MelonOf(assembly);
+            if (melon != null)
+                Melon = melon;
             if (melon?.Info != null && string.IsNullOrEmpty(Version))
                 Version = melon.Info.Version;
         }
@@ -396,6 +400,178 @@ namespace PhxCore
             {
                 if (melon?.MelonAssembly != null && melon.MelonAssembly.Assembly == assembly)
                     return melon;
+            }
+            return null;
+        }
+
+        /// <summary>PhxCore itself cannot be turned off.</summary>
+        internal static bool CanToggle(ModEntry mod)
+        {
+            return mod != null
+                && mod != Core
+                && mod.Assembly != typeof(Registry).Assembly
+                && !string.Equals(mod.Name, "PhxCore", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(mod.Name, Core.Name, StringComparison.OrdinalIgnoreCase);
+        }
+
+        internal static bool IsRunning(ModEntry mod)
+        {
+            return mod != null && mod.Melon != null && mod.Melon.Registered;
+        }
+
+        /// <summary>ON while the mod is loaded, OFF while it is unloaded.</summary>
+        internal static string PowerWord(ModEntry mod)
+        {
+            if (mod == null)
+                return "OFF";
+            Remember(mod);
+            return IsRunning(mod) ? "ON" : "OFF";
+        }
+
+        /// <summary>Flips the mod. Off unloads it. On loads that same mod again.</summary>
+        internal static void TogglePower(ModEntry mod)
+        {
+            if (!CanToggle(mod))
+                return;
+            Remember(mod);
+            if (IsRunning(mod))
+                Disable(mod);
+            else
+                Enable(mod);
+        }
+
+        static void Remember(ModEntry mod)
+        {
+            if (mod.Melon != null && mod.Melon.Registered)
+                return;
+            MelonBase melon = mod.Assembly != null ? MelonOf(mod.Assembly) : null;
+            if (melon == null)
+                melon = FindMelon(mod.Name);
+            if (melon != null)
+                mod.Melon = melon;
+        }
+
+        /// <summary>
+        /// Unloads mods the player turned off, before their OnInitialize runs when possible.
+        /// Pass dropMissing on the late pass so a mod that is no longer installed is forgotten.
+        /// </summary>
+        internal static void UnloadDisabled(bool dropMissing)
+        {
+            var names = new List<string>();
+            Config.CollectDisabled(names);
+            for (int i = 0; i < names.Count; i++)
+            {
+                string name = names[i];
+                if (string.Equals(name, "PhxCore", StringComparison.OrdinalIgnoreCase) || string.Equals(name, Core.Name, StringComparison.OrdinalIgnoreCase))
+                {
+                    Config.SetDisabled(name, false);
+                    continue;
+                }
+
+                MelonBase melon = FindMelon(name);
+                if (melon == null)
+                {
+                    ModEntry existing = FindEntry(name);
+                    if (existing != null && existing.Melon != null)
+                        continue;
+                    if (dropMissing)
+                        Config.SetDisabled(name, false);
+                    continue;
+                }
+
+                if (melon.MelonAssembly != null && melon.MelonAssembly.Assembly == typeof(Registry).Assembly)
+                    continue;
+                if (!(melon is MelonMod))
+                    continue;
+
+                ModEntry entry = FindEntry(name) ?? GetOrAdd(melon.Info != null ? melon.Info.Name : name);
+                if (entry.Assembly == null && melon.MelonAssembly != null)
+                    entry.Link(melon.MelonAssembly.Assembly);
+                entry.Melon = melon;
+                if (melon.Info != null && string.IsNullOrEmpty(entry.Version))
+                    entry.Version = melon.Info.Version;
+
+                if (!melon.Registered)
+                    continue;
+
+                try
+                {
+                    melon.Unregister("Disabled in PHX MODS.", true);
+                    MelonLogger.Msg(entry.Name + " is off.");
+                }
+                catch (Exception e)
+                {
+                    MelonLogger.Warning("Could not unload " + entry.Name + ": " + e.Message);
+                }
+            }
+        }
+
+        static void Disable(ModEntry mod)
+        {
+            Config.SetDisabled(mod.Name, true);
+            MelonBase melon = mod.Melon;
+            if ((melon == null || !melon.Registered) && mod.Assembly != null)
+                melon = MelonOf(mod.Assembly);
+            if (melon == null)
+                melon = FindMelon(mod.Name);
+            if (melon != null)
+                mod.Melon = melon;
+
+            if (melon == null || !melon.Registered)
+                return;
+
+            try
+            {
+                melon.Unregister("Disabled in PHX MODS.", true);
+                MelonLogger.Msg(mod.Name + " is off.");
+            }
+            catch (Exception e)
+            {
+                MelonLogger.Warning("Could not unload " + mod.Name + ": " + e.Message);
+            }
+        }
+
+        static void Enable(ModEntry mod)
+        {
+            MelonBase melon = mod.Melon;
+            if (melon == null && mod.Assembly != null)
+                melon = MelonOf(mod.Assembly);
+            if (melon == null)
+                melon = FindMelon(mod.Name);
+            if (melon == null)
+            {
+                MelonLogger.Warning("Could not load " + mod.Name + ".");
+                return;
+            }
+
+            mod.Melon = melon;
+            if (!melon.Registered)
+            {
+                try
+                {
+                    if (!melon.Register())
+                    {
+                        MelonLogger.Warning("Could not load " + mod.Name + ".");
+                        return;
+                    }
+                }
+                catch (Exception e)
+                {
+                    MelonLogger.Warning("Could not load " + mod.Name + ": " + e.Message);
+                    return;
+                }
+            }
+
+            Config.SetDisabled(mod.Name, false);
+            MelonLogger.Msg(mod.Name + " is on.");
+        }
+
+        static ModEntry FindEntry(string name)
+        {
+            for (int i = 0; i < All.Count; i++)
+            {
+                if (string.Equals(All[i].Name, name, StringComparison.OrdinalIgnoreCase))
+                    return All[i];
             }
             return null;
         }

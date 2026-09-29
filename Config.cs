@@ -85,6 +85,67 @@ namespace PhxCore
             return fallback;
         }
 
+        const string OffPrefix = "PhxCore.Off.";
+
+        /// <summary>True when the player turned this mod off in PHX MODS. It stays off across restarts until they turn it on.</summary>
+        internal static bool IsDisabled(string name)
+        {
+            EnsureLoaded();
+            string key = FindDisabledKey(name);
+            return key != null && IsTrue(Values[key]);
+        }
+
+        internal static void SetDisabled(string name, bool disabled)
+        {
+            EnsureLoaded();
+            string existing = FindDisabledKey(name);
+            if (disabled)
+            {
+                if (existing != null && !string.Equals(existing, OffPrefix + name, StringComparison.Ordinal))
+                    Values.Remove(existing);
+                Values[OffPrefix + name] = "true";
+            }
+            else
+            {
+                if (existing == null)
+                    return;
+                Values.Remove(existing);
+            }
+            Save();
+        }
+
+        internal static void CollectDisabled(List<string> names)
+        {
+            EnsureLoaded();
+            if (names == null)
+                return;
+            foreach (KeyValuePair<string, string> pair in Values)
+            {
+                if (!pair.Key.StartsWith(OffPrefix, StringComparison.OrdinalIgnoreCase) || !IsTrue(pair.Value))
+                    continue;
+                names.Add(pair.Key.Substring(OffPrefix.Length));
+            }
+        }
+
+        static string FindDisabledKey(string name)
+        {
+            if (string.IsNullOrEmpty(name))
+                return null;
+            foreach (string key in Values.Keys)
+            {
+                if (!key.StartsWith(OffPrefix, StringComparison.OrdinalIgnoreCase))
+                    continue;
+                if (string.Equals(key.Substring(OffPrefix.Length), name, StringComparison.OrdinalIgnoreCase))
+                    return key;
+            }
+            return null;
+        }
+
+        static bool IsTrue(string text)
+        {
+            return text != null && (text.Equals("true", StringComparison.OrdinalIgnoreCase) || text == "1");
+        }
+
         internal static int ReadChoice(string mod, string label, string[] options, int fallback)
         {
             EnsureLoaded();

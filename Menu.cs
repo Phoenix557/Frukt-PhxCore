@@ -289,7 +289,7 @@ namespace PhxCore
                     MenuLineButton line = lines[i];
                     if (line == null)
                         continue;
-                    if (line.gameObject.name.StartsWith(Prefix + "Mod_"))
+                    if (line.gameObject.name.StartsWith(Prefix + "Mod_") || line.gameObject.name.StartsWith(Prefix + "Power") || line.gameObject.name.StartsWith(Prefix + "Slot_"))
                     {
                         UnityEngine.Object.Destroy(line.gameObject);
                         continue;
@@ -353,7 +353,90 @@ namespace PhxCore
                 UnityAction click = (UnityAction)(Action)(() => OpenMod(captured));
                 _clicks.Add(click);
                 row.m_button.onClick.AddListener(click);
+                AddPower(proto, row, captured, i);
             }
+        }
+
+        const float PowerWidth = 150f;
+        const float PowerGap = 96f;
+
+        /// <summary>ON / OFF is its own plate, sitting fully to the left of the name with a gap between them.</summary>
+        static void AddPower(MenuLineButton proto, MenuLineButton row, ModEntry mod, int index)
+        {
+            if (proto == null || row == null || !Registry.CanToggle(mod))
+                return;
+
+            MenuLineButton power = Clone(proto, row.transform, Prefix + "Power_" + index);
+            if (power == null || power.m_button == null)
+                return;
+
+            power.gameObject.SetActive(true);
+            LayoutElement powerLayout = power.GetComponent<LayoutElement>();
+            if (powerLayout != null)
+                powerLayout.ignoreLayout = true;
+
+            PlacePower(power.GetComponent<RectTransform>());
+            FitPlate(power);
+            Style(power);
+            try
+            {
+                if (power.m_text != null && power.m_text.m_label != null)
+                    power.m_text.m_label.alignment = TextAlignmentOptions.Center;
+            }
+            catch { }
+            ApplyPowerWord(power, mod);
+
+            ModEntry captured = mod;
+            MenuLineButton capturedPower = power;
+            UnityAction click = (UnityAction)(Action)(() =>
+            {
+                Registry.TogglePower(captured);
+                ApplyPowerWord(capturedPower, captured);
+            });
+            _clicks.Add(click);
+            power.m_button.onClick.RemoveAllListeners();
+            power.m_button.onClick.AddListener(click);
+        }
+
+        /// <summary>Right edge stops PowerGap pixels before the name, so the two plates cannot meet.</summary>
+        static void PlacePower(RectTransform powerRect)
+        {
+            if (powerRect == null)
+                return;
+            powerRect.anchorMin = new Vector2(0f, 0f);
+            powerRect.anchorMax = new Vector2(0f, 1f);
+            powerRect.pivot = new Vector2(1f, 0.5f);
+            powerRect.offsetMin = new Vector2(-(PowerWidth + PowerGap), 0f);
+            powerRect.offsetMax = new Vector2(-PowerGap, 0f);
+            powerRect.localScale = Vector3.one;
+        }
+
+        /// <summary>Keeps every piece of the plate inside the button, so a wide child cannot reach the name.</summary>
+        static void FitPlate(MenuLineButton line)
+        {
+            if (line == null)
+                return;
+            RectTransform[] rects = line.GetComponentsInChildren<RectTransform>(true);
+            if (rects == null)
+                return;
+            for (int i = 0; i < rects.Length; i++)
+            {
+                RectTransform rect = rects[i];
+                if (rect == null || rect == line.transform)
+                    continue;
+                rect.anchorMin = Vector2.zero;
+                rect.anchorMax = Vector2.one;
+                rect.offsetMin = Vector2.zero;
+                rect.offsetMax = Vector2.zero;
+                rect.localScale = Vector3.one;
+            }
+        }
+
+        static void ApplyPowerWord(MenuLineButton power, ModEntry mod)
+        {
+            if (power == null || mod == null)
+                return;
+            try { power.SetWord(Registry.PowerWord(mod)); } catch { }
         }
 
         static void FillOptions(ModEntry mod)
