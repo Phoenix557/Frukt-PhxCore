@@ -8,7 +8,7 @@ namespace PhxCore
 {
     public class PhxPlugin : MelonMod
     {
-        public const string Version = "2.1.5";
+        public const string Version = "2.2.0";
 
         public override void OnInitializeMelon()
         {
@@ -60,6 +60,7 @@ namespace PhxCore
         {
             Movement.LateUpdate();
             Updates.LateTick();
+            Menu.LateTick();
         }
     }
 }

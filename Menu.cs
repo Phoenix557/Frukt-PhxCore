@@ -5,6 +5,7 @@ using Il2CppInfrastructure.Components.ManagedBehaviours;
 using Il2CppInterop.Runtime.InteropTypes.Arrays;
 using Il2CppPresenters.Pause;
 using Il2CppTMPro;
+using Il2CppViews.Game;
 using Il2CppViews.Generic;
 using Il2CppViews.Pause;
 using MelonLoader;
@@ -12,6 +13,7 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace PhxCore
@@ -39,7 +41,10 @@ namespace PhxCore
         static PathHeaderView _modHeader;
         static MenuLineButton _button;
         static MenuLineButton _respawn;
+        static MenuLineButton _apply;
         static UnityAction _buttonClick;
+        static UnityAction _applyClick;
+        static bool _applyFailed;
         static PausePresenter _pause;
         static ModEntry _open;
         static Hotkey _listening;
@@ -47,6 +52,14 @@ namespace PhxCore
         static int _listenFrame;
         static readonly List<UnityAction> _clicks = new List<UnityAction>();
         static readonly List<OptionRow> _rows = new List<OptionRow>();
+        static readonly List<PowerPlate> _powers = new List<PowerPlate>();
+
+        /// <summary>An on/off plate and the name row it sits beside.</summary>
+        sealed class PowerPlate
+        {
+            internal MenuLineButton Power;
+            internal MenuLineButton Row;
+        }
 
         /// <summary>One line on a mod's page: a full-size pause-menu line reading "LABEL   VALUE".</summary>
         sealed class OptionRow
@@ -66,7 +79,11 @@ namespace PhxCore
             _modHeader = null;
             _button = null;
             _respawn = null;
+            _apply = null;
             _buttonClick = null;
+            _applyClick = null;
+            _applyFailed = false;
+            _powers.Clear();
             _pause = null;
             _open = null;
             _listening = null;
@@ -82,8 +99,20 @@ namespace PhxCore
                 HideImmediate();
             if (paused)
                 EnsureButton();
+            RefreshApply();
             if (_listening != null)
                 CaptureKey();
+        }
+
+        internal static void LateTick()
+        {
+            if (_page == Page.List)
+            {
+                for (int i = 0; i < _powers.Count; i++)
+                    PlacePower(_powers[i].Row, _powers[i].Power);
+            }
+            if (_apply != null && _apply.gameObject.activeInHierarchy)
+                PlaceApply(_apply);
         }
 
         static void ShowList()
@@ -206,6 +235,110 @@ namespace PhxCore
             }
         }
 
+        const float ApplyGap = 28f;
+        const float ApplyWidth = 360f;
+
+        /// <summary>Shows APPLY CHANGES to the right of the kills counter while a staged on/off is waiting.</summary>
+        static void RefreshApply()
+        {
+            bool show = IsPaused() && Registry.HasPending;
+            if (!show)
+            {
+                if (_apply != null)
+                    _apply.gameObject.SetActive(false);
+                return;
+            }
+
+            if (_apply == null)
+                EnsureApply();
+            if (_apply != null)
+                _apply.gameObject.SetActive(true);
+        }
+
+        static void EnsureApply()
+        {
+            if (_apply != null || _applyFailed)
+                return;
+
+            PauseView view = UnityEngine.Object.FindFirstObjectByType<PauseView>();
+            if (view == null || view.m_settingsButton == null)
+                return;
+
+            MenuLineButton proto = view.m_settingsButton;
+            Canvas canvas = proto.GetComponentInParent<Canvas>();
+            if (canvas == null)
+                return;
+
+            try
+            {
+                MenuLineButton clone = Clone(proto, canvas.transform, Prefix + "Apply");
+                if (clone == null || clone.m_button == null)
+                {
+                    if (clone != null)
+                        UnityEngine.Object.Destroy(clone.gameObject);
+                    _applyFailed = true;
+                    return;
+                }
+
+                clone.gameObject.SetActive(true);
+                IgnoreLayout(clone);
+
+                FitPlate(clone);
+                Style(clone);
+                clone.SetWord("APPLY CHANGES");
+                PlaceApply(clone);
+                clone.m_button.onClick.RemoveAllListeners();
+                _applyClick = (UnityAction)(Action)ApplyChanges;
+                _clicks.Add(_applyClick);
+                clone.m_button.onClick.AddListener(_applyClick);
+                _apply = clone;
+                MelonLogger.Msg("Pause menu APPLY CHANGES button added.");
+            }
+            catch (Exception e)
+            {
+                _applyFailed = true;
+                MelonLogger.Warning("Could not add the apply button: " + e.Message);
+            }
+        }
+
+        static void ApplyChanges()
+        {
+            if (!Registry.HasPending)
+                return;
+            Registry.ApplyPending();
+            RefreshApply();
+            ReloadMap();
+        }
+
+        static void ReloadMap()
+        {
+            try
+            {
+                if (_pause == null)
+                    _pause = UnityEngine.Object.FindFirstObjectByType<PausePresenter>();
+                if (_pause != null && _pause.m_pauseService != null)
+                {
+                    var pause = _pause.m_pauseService.TryCast<Il2CppGame.PauseService>();
+                    if (pause != null)
+                        pause.CancelPause();
+                }
+            }
+            catch (Exception e)
+            {
+                MelonLogger.Warning("Could not unpause: " + e.Message);
+            }
+
+            try
+            {
+                Scene scene = SceneManager.GetActiveScene();
+                SceneManager.LoadScene(scene.buildIndex);
+            }
+            catch (Exception e)
+            {
+                MelonLogger.Warning("Could not reload the map: " + e.Message);
+            }
+        }
+
         static bool EnsureScreens()
         {
             if (_list != null && _mod != null)
@@ -279,6 +412,7 @@ namespace PhxCore
             Transform column = Column(_list);
             if (column == null)
                 return;
+            _powers.Clear();
 
             MenuLineButton[] lines = _list.GetComponentsInChildren<MenuLineButton>(true);
             MenuLineButton proto = null;
@@ -358,9 +492,9 @@ namespace PhxCore
         }
 
         const float PowerWidth = 150f;
-        const float PowerGap = 96f;
+        const float PowerGap = 56f;
 
-        /// <summary>ON / OFF is its own plate, sitting fully to the left of the name with a gap between them.</summary>
+        /// <summary>ON / OFF is its own plate, sitting to the left of the name with a gap between them.</summary>
         static void AddPower(MenuLineButton proto, MenuLineButton row, ModEntry mod, int index)
         {
             if (proto == null || row == null || !Registry.CanToggle(mod))
@@ -371,11 +505,16 @@ namespace PhxCore
                 return;
 
             power.gameObject.SetActive(true);
-            LayoutElement powerLayout = power.GetComponent<LayoutElement>();
-            if (powerLayout != null)
-                powerLayout.ignoreLayout = true;
-
-            PlacePower(power.GetComponent<RectTransform>());
+            IgnoreLayout(power);
+            // Clip everything the plate draws to its own rect, so hover bars and glow cannot spill onto the name.
+            try
+            {
+                if (power.GetComponent<RectMask2D>() == null)
+                    power.gameObject.AddComponent<RectMask2D>();
+            }
+            catch { }
+            _powers.Add(new PowerPlate { Power = power, Row = row });
+            PlacePower(row, power);
             FitPlate(power);
             Style(power);
             try
@@ -390,25 +529,211 @@ namespace PhxCore
             MenuLineButton capturedPower = power;
             UnityAction click = (UnityAction)(Action)(() =>
             {
-                Registry.TogglePower(captured);
+                Registry.StageToggle(captured);
                 ApplyPowerWord(capturedPower, captured);
+                RefreshApply();
             });
             _clicks.Add(click);
             power.m_button.onClick.RemoveAllListeners();
             power.m_button.onClick.AddListener(click);
         }
 
-        /// <summary>Right edge stops PowerGap pixels before the name, so the two plates cannot meet.</summary>
-        static void PlacePower(RectTransform powerRect)
+        static void IgnoreLayout(Component item)
         {
-            if (powerRect == null)
+            if (item == null)
                 return;
-            powerRect.anchorMin = new Vector2(0f, 0f);
-            powerRect.anchorMax = new Vector2(0f, 1f);
+            LayoutElement layout = item.GetComponent<LayoutElement>();
+            if (layout == null)
+                layout = item.gameObject.AddComponent<LayoutElement>();
+            layout.ignoreLayout = true;
+        }
+
+        /// <summary>
+        /// Right edge stops PowerGap pixels before the name's letters. The plate is capped at PowerWidth and clips what it
+        /// draws, so it can never reach the name.
+        /// </summary>
+        static void PlacePower(MenuLineButton row, MenuLineButton power)
+        {
+            if (row == null || power == null)
+                return;
+            RectTransform powerRect = power.GetComponent<RectTransform>();
+            RectTransform parent = power.transform.parent != null ? power.transform.parent.TryCast<RectTransform>() : null;
+            if (powerRect == null || parent == null)
+                return;
+            if (!GlyphPoint(row, true, out Vector3 world))
+                return;
+            if (!ToLocal(parent, world, out Vector2 local))
+                return;
+
+            float height = parent.rect.height;
+            if (height < 32f)
+                height = 64f;
+            Vector2 anchor = parent.pivot;
+            powerRect.anchorMin = anchor;
+            powerRect.anchorMax = anchor;
+            float right = local.x - PowerGap;
+            float width = PowerWidth;
             powerRect.pivot = new Vector2(1f, 0.5f);
-            powerRect.offsetMin = new Vector2(-(PowerWidth + PowerGap), 0f);
-            powerRect.offsetMax = new Vector2(-PowerGap, 0f);
+            powerRect.sizeDelta = new Vector2(width, height);
+            powerRect.anchoredPosition = new Vector2(right, local.y);
             powerRect.localScale = Vector3.one;
+            // The line's hover animation resizes its children each frame; pull them back inside the plate.
+            FitPlate(power);
+        }
+
+        /// <summary>Left edge starts ApplyGap pixels after the kills counter.</summary>
+        static void PlaceApply(MenuLineButton button)
+        {
+            if (button == null)
+                return;
+            RectTransform rect = button.GetComponent<RectTransform>();
+            RectTransform parent = button.transform.parent != null ? button.transform.parent.TryCast<RectTransform>() : null;
+            if (rect == null || parent == null)
+                return;
+
+            KillsLine kills = UnityEngine.Object.FindFirstObjectByType<KillsLine>();
+            if (kills == null || !RightEdge(kills.gameObject, out Vector3 world))
+                return;
+            if (!ToLocal(parent, world, out Vector2 local))
+                return;
+
+            float height = rect.rect.height;
+            if (height < 32f)
+                height = rect.sizeDelta.y;
+            if (height < 32f)
+                height = 64f;
+            float width = ApplyWidth;
+            try
+            {
+                TextMeshProUGUI word = button.m_text != null ? button.m_text.m_label : null;
+                if (word != null)
+                {
+                    word.ForceMeshUpdate();
+                    if (word.preferredWidth > 40f)
+                        width = word.preferredWidth + 96f;
+                }
+            }
+            catch { }
+
+            Vector2 anchor = parent.pivot;
+            rect.anchorMin = anchor;
+            rect.anchorMax = anchor;
+            rect.pivot = new Vector2(0f, 0.5f);
+            rect.sizeDelta = new Vector2(width, height);
+            rect.anchoredPosition = new Vector2(local.x + ApplyGap, local.y);
+            rect.localScale = Vector3.one;
+        }
+
+        /// <summary>
+        /// World point on the right edge of the last visible letter under host, so "KILLS:" and the count are both
+        /// cleared even when they are separate labels.
+        /// </summary>
+        static bool RightEdge(GameObject host, out Vector3 world)
+        {
+            world = Vector3.zero;
+            if (host == null)
+                return false;
+            bool found = false;
+            float bestX = float.MinValue;
+            Vector3 best = Vector3.zero;
+            try
+            {
+                TextMeshProUGUI[] labels = host.GetComponentsInChildren<TextMeshProUGUI>(false);
+                for (int i = 0; labels != null && i < labels.Length; i++)
+                {
+                    TextMeshProUGUI label = labels[i];
+                    if (label == null || !label.enabled || string.IsNullOrEmpty(label.text))
+                        continue;
+                    if (!GlyphPoint(label, label.gameObject, false, out Vector3 point))
+                        continue;
+                    if (!found || point.x > bestX)
+                    {
+                        bestX = point.x;
+                        best = point;
+                        found = true;
+                    }
+                }
+            }
+            catch { }
+            if (!found)
+                return GlyphPoint(host, false, out world);
+
+            world = best;
+            return true;
+        }
+
+        /// <summary>World point on the left or right edge of a line's letters.</summary>
+        static bool GlyphPoint(MenuLineButton line, bool left, out Vector3 world)
+        {
+            world = Vector3.zero;
+            if (line == null)
+                return false;
+            TextMeshProUGUI label = null;
+            try { label = line.m_text != null ? line.m_text.m_label : null; } catch { }
+            return GlyphPoint(label, line.gameObject, left, out world);
+        }
+
+        static bool GlyphPoint(GameObject host, bool left, out Vector3 world)
+        {
+            world = Vector3.zero;
+            if (host == null)
+                return false;
+            TextMeshProUGUI label = null;
+            try
+            {
+                TextMeshProUGUI[] labels = host.GetComponentsInChildren<TextMeshProUGUI>(true);
+                if (labels != null && labels.Length > 0)
+                    label = labels[0];
+            }
+            catch { }
+            return GlyphPoint(label, host, left, out world);
+        }
+
+        static bool GlyphPoint(TextMeshProUGUI label, GameObject host, bool left, out Vector3 world)
+        {
+            world = Vector3.zero;
+            if (label != null)
+            {
+                try
+                {
+                    label.ForceMeshUpdate();
+                    Bounds bounds = label.textBounds;
+                    if (bounds.size.x > 1f)
+                    {
+                        float edge = left ? bounds.min.x : bounds.max.x;
+                        world = label.transform.TransformPoint(new Vector3(edge, bounds.center.y, 0f));
+                        return true;
+                    }
+                    float half = Mathf.Max(label.preferredWidth, 8f) * 0.5f;
+                    float x = label.rectTransform.rect.center.x + (left ? -half : half);
+                    world = label.transform.TransformPoint(new Vector3(x, label.rectTransform.rect.center.y, 0f));
+                    return true;
+                }
+                catch { }
+            }
+
+            if (host == null)
+                return false;
+            RectTransform rect = host.GetComponent<RectTransform>();
+            if (rect == null)
+                return false;
+            Vector3[] corners = new Vector3[4];
+            rect.GetWorldCorners(corners);
+            world = left ? (corners[0] + corners[1]) * 0.5f : (corners[2] + corners[3]) * 0.5f;
+            return true;
+        }
+
+        static bool ToLocal(RectTransform parent, Vector3 world, out Vector2 local)
+        {
+            local = Vector2.zero;
+            if (parent == null)
+                return false;
+            Canvas canvas = parent.GetComponentInParent<Canvas>();
+            Camera cam = null;
+            if (canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay)
+                cam = canvas.worldCamera;
+            Vector2 screen = RectTransformUtility.WorldToScreenPoint(cam, world);
+            return RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, screen, cam, out local);
         }
 
         /// <summary>Keeps every piece of the plate inside the button, so a wide child cannot reach the name.</summary>
@@ -436,7 +761,7 @@ namespace PhxCore
         {
             if (power == null || mod == null)
                 return;
-            try { power.SetWord(Registry.PowerWord(mod)); } catch { }
+            try { power.SetWord(Registry.DesiredWord(mod)); } catch { }
         }
 
         static void FillOptions(ModEntry mod)
@@ -722,6 +1047,7 @@ namespace PhxCore
         {
             try { if (_button != null) UnityEngine.Object.Destroy(_button.gameObject); } catch { }
             try { if (_respawn != null) UnityEngine.Object.Destroy(_respawn.gameObject); } catch { }
+            try { if (_apply != null) UnityEngine.Object.Destroy(_apply.gameObject); } catch { }
             try { if (_list != null) UnityEngine.Object.Destroy(_list.gameObject); } catch { }
             try { if (_mod != null) UnityEngine.Object.Destroy(_mod.gameObject); } catch { }
             Reset();

@@ -333,6 +333,9 @@ namespace PhxCore
         internal static readonly List<ModEntry> All = new List<ModEntry>();
         internal static bool Started;
 
+        /// <summary>Desired running state for mods the player flipped but has not applied yet. True means ON.</summary>
+        static readonly Dictionary<string, bool> Pending = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+
         /// <summary>PhxCore's own page (SETTINGS). Kept out of the mod list but saved with everything else.</summary>
         internal static readonly ModEntry Core = new ModEntry("PhxCore");
 
@@ -428,7 +431,64 @@ namespace PhxCore
             return IsRunning(mod) ? "ON" : "OFF";
         }
 
-        /// <summary>Flips the mod. Off unloads it. On loads that same mod again.</summary>
+        internal static bool HasPending => Pending.Count > 0;
+
+        /// <summary>ON or OFF for the plate: the staged choice when one is waiting, otherwise the live state.</summary>
+        internal static string DesiredWord(ModEntry mod)
+        {
+            if (mod != null && Pending.TryGetValue(mod.Name, out bool staged))
+                return staged ? "ON" : "OFF";
+            return PowerWord(mod);
+        }
+
+        /// <summary>
+        /// Records a flip without loading or unloading. Clicking back to the live state drops the mod from the pending set.
+        /// </summary>
+        internal static void StageToggle(ModEntry mod)
+        {
+            if (!CanToggle(mod))
+                return;
+            Remember(mod);
+            bool live = IsRunning(mod);
+            bool current = Pending.TryGetValue(mod.Name, out bool staged) ? staged : live;
+            bool next = !current;
+            if (next == live)
+                Pending.Remove(mod.Name);
+            else
+                Pending[mod.Name] = next;
+        }
+
+        /// <summary>Loads and unloads every staged mod. A mod that fails to load is logged and the rest still apply.</summary>
+        internal static void ApplyPending()
+        {
+            if (Pending.Count == 0)
+                return;
+
+            var names = new List<string>(Pending.Keys);
+            for (int i = 0; i < names.Count; i++)
+            {
+                string name = names[i];
+                if (!Pending.TryGetValue(name, out bool wantOn))
+                    continue;
+                ModEntry mod = FindEntry(name);
+                if (mod == null || !CanToggle(mod))
+                    continue;
+                try
+                {
+                    Remember(mod);
+                    if (wantOn == IsRunning(mod))
+                        continue;
+                    TogglePower(mod);
+                }
+                catch (Exception e)
+                {
+                    MelonLogger.Warning("Could not apply " + name + ": " + e.Message);
+                }
+            }
+            Pending.Clear();
+        }
+
+        /// <summary>Flips the mod immediately. Off unloads it. On loads that same mod again.</summary>
         internal static void TogglePower(ModEntry mod)
         {
             if (!CanToggle(mod))

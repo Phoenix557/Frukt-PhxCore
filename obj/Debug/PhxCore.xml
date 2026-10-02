@@ -74,6 +74,9 @@
         <member name="M:PhxCore.Player.OnRespawn(System.Action)">
             <summary>Called when the pause menu's RESPAWN button is pressed.</summary>
         </member>
+        <member name="F:PhxCore.Registry.Pending">
+            <summary>Desired running state for mods the player flipped but has not applied yet. True means ON.</summary>
+        </member>
         <member name="F:PhxCore.Registry.Core">
             <summary>PhxCore's own page (SETTINGS). Kept out of the mod list but saved with everything else.</summary>
         </member>
@@ -88,8 +91,19 @@
         <member name="M:PhxCore.Registry.PowerWord(PhxCore.ModEntry)">
             <summary>ON while the mod is loaded, OFF while it is unloaded.</summary>
         </member>
+        <member name="M:PhxCore.Registry.DesiredWord(PhxCore.ModEntry)">
+            <summary>ON or OFF for the plate: the staged choice when one is waiting, otherwise the live state.</summary>
+        </member>
+        <member name="M:PhxCore.Registry.StageToggle(PhxCore.ModEntry)">
+            <summary>
+            Records a flip without loading or unloading. Clicking back to the live state drops the mod from the pending set.
+            </summary>
+        </member>
+        <member name="M:PhxCore.Registry.ApplyPending">
+            <summary>Loads and unloads every staged mod. A mod that fails to load is logged and the rest still apply.</summary>
+        </member>
         <member name="M:PhxCore.Registry.TogglePower(PhxCore.ModEntry)">
-            <summary>Flips the mod. Off unloads it. On loads that same mod again.</summary>
+            <summary>Flips the mod immediately. Off unloads it. On loads that same mod again.</summary>
         </member>
         <member name="M:PhxCore.Registry.UnloadDisabled(System.Boolean)">
             <summary>
@@ -142,14 +156,35 @@
             Hidden/Internal-Colored ships in every Unity build (it is what GL and debug drawing use).
             </summary>
         </member>
+        <member name="T:PhxCore.Menu.PowerPlate">
+            <summary>An on/off plate and the name row it sits beside.</summary>
+        </member>
         <member name="T:PhxCore.Menu.OptionRow">
             <summary>One line on a mod's page: a full-size pause-menu line reading "LABEL   VALUE".</summary>
         </member>
-        <member name="M:PhxCore.Menu.AddPower(Il2CppViews.Generic.MenuLineButton,Il2CppViews.Generic.MenuLineButton,PhxCore.ModEntry,System.Int32)">
-            <summary>ON / OFF is its own plate, sitting fully to the left of the name with a gap between them.</summary>
+        <member name="M:PhxCore.Menu.RefreshApply">
+            <summary>Shows APPLY CHANGES to the right of the kills counter while a staged on/off is waiting.</summary>
         </member>
-        <member name="M:PhxCore.Menu.PlacePower(UnityEngine.RectTransform)">
-            <summary>Right edge stops PowerGap pixels before the name, so the two plates cannot meet.</summary>
+        <member name="M:PhxCore.Menu.AddPower(Il2CppViews.Generic.MenuLineButton,Il2CppViews.Generic.MenuLineButton,PhxCore.ModEntry,System.Int32)">
+            <summary>ON / OFF is its own plate, sitting to the left of the name with a gap between them.</summary>
+        </member>
+        <member name="M:PhxCore.Menu.PlacePower(Il2CppViews.Generic.MenuLineButton,Il2CppViews.Generic.MenuLineButton)">
+            <summary>
+            Right edge stops PowerGap pixels before the name's letters. The plate is capped at PowerWidth and clips what it
+            draws, so it can never reach the name.
+            </summary>
+        </member>
+        <member name="M:PhxCore.Menu.PlaceApply(Il2CppViews.Generic.MenuLineButton)">
+            <summary>Left edge starts ApplyGap pixels after the kills counter.</summary>
+        </member>
+        <member name="M:PhxCore.Menu.RightEdge(UnityEngine.GameObject,UnityEngine.Vector3@)">
+            <summary>
+            World point on the right edge of the last visible letter under host, so "KILLS:" and the count are both
+            cleared even when they are separate labels.
+            </summary>
+        </member>
+        <member name="M:PhxCore.Menu.GlyphPoint(Il2CppViews.Generic.MenuLineButton,System.Boolean,UnityEngine.Vector3@)">
+            <summary>World point on the left or right edge of a line's letters.</summary>
         </member>
         <member name="M:PhxCore.Menu.FitPlate(Il2CppViews.Generic.MenuLineButton)">
             <summary>Keeps every piece of the plate inside the button, so a wide child cannot reach the name.</summary>
